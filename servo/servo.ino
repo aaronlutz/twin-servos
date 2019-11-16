@@ -23,6 +23,11 @@ byte colPins[COLS] = {5, 4, 3, 2}; //connect to the column pinouts of the keypad
 //initialize an instance of class NewKeypad
 Keypad customKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 
+char keypad_input[1];
+
+// hold keypad input
+char keypad_message[1600];
+int message_length = 0;
 
 void setup(){
   Serial.begin(9600);
@@ -51,10 +56,33 @@ void loop(){
   // myservo.write(180);
   // delay(1000);
 
-  char customKey = customKeypad.getKey();
+  char keypad_input = customKeypad.getKey();
 
-  if (customKey){
-    Serial.println(customKey);
+  if (keypad_input){
+    if (keypad_input == '#') {
+
+      // prefeace the pringing of keypad message
+      Serial.println("");
+      Serial.print("you typed: ");
+
+      // loop through the relevant portion of keypad_message
+      for (int i; i < message_length; i++) {
+        Serial.print(keypad_message[i]);
+      }
+      Serial.println("");
+
+      // reset the message length
+      message_length = 0;
+
+    } else {
+
+      // add keyboard input to keyboard message
+      keypad_message[message_length] = keypad_input;
+      message_length++;
+
+      // print this keyboard input
+      Serial.print(keypad_input);
+    }
   }
 
 }
