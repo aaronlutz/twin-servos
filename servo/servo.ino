@@ -59,30 +59,66 @@ void loop(){
   char keypad_input = customKeypad.getKey();
 
   if (keypad_input){
-    if (keypad_input == '#') {
-
-      // prefeace the pringing of keypad message
-      Serial.println("");
-      Serial.print("you typed: ");
-
-      // loop through the relevant portion of keypad_message
-      for (int i; i < message_length; i++) {
-        Serial.print(keypad_message[i]);
-      }
-      Serial.println("");
-
-      // reset the message length
-      message_length = 0;
-
-    } else {
-
-      // add keyboard input to keyboard message
-      keypad_message[message_length] = keypad_input;
-      message_length++;
-
-      // print this keyboard input
-      Serial.print(keypad_input);
+    KeypadLog(keypad_input);
     }
+
+
+}
+
+void KeypadLog(char _keypad_input) {
+  if (_keypad_input == '#') {
+    // display contents of keypad_message
+    // // prefix printed log
+    // Serial.println("");
+    // Serial.print("you typed: ");
+    //
+    // // loop through the relevant portion of keypad_message
+    // for (int i; i < message_length; i++) {
+    //   Serial.print(keypad_message[i]);
+    // }
+    //
+    // // padding
+    // Serial.println("");
+    // Serial.println("");
+    KeypadLogDisplay();
+
+    // reset the message length
+    KeypadLogReset();
+
+  } else {
+    KeypadLogAppend(_keypad_input);
+
+    // print this keyboard input
+    Serial.print(_keypad_input);
+  }
+}
+
+void KeypadLogReset() {
+  // flush keypad_messages
+  for (int i = 0; i < 1600; i++) {
+    keypad_message[i] = NULL;
+  }
+  // reset the position control varaible
+  message_length = 0;
+}
+
+void KeypadLogAppend(char _append_me) {
+  // slot input and increment position control variable
+  keypad_message[message_length] = _append_me;
+  message_length++;
+}
+
+void KeypadLogDisplay() {
+  // prefix printed log
+  Serial.println("");
+  Serial.print("you typed: ");
+
+  // loop through the relevant portion of keypad_message
+  for (int i; i < message_length; i++) {
+    Serial.print(keypad_message[i]);
   }
 
+  // padding
+  Serial.println("");
+  Serial.println("");
 }
