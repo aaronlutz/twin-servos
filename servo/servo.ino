@@ -4,7 +4,9 @@
 #include <Keypad.h>
 
 // servo setup
-Servo myservo;
+Servo upper_servo;
+Servo lower_servo;
+Servo focus_servo;
 
 // numberpad setup
 const byte ROWS = 4; //four rows
@@ -23,102 +25,148 @@ byte colPins[COLS] = {5, 4, 3, 2}; //connect to the column pinouts of the keypad
 //initialize an instance of class NewKeypad
 Keypad customKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 
-char keypad_input[1];
+// char keypad_input[1];
+int keypad_input;
+int keypad_integer;
+
+
+bool valid_servo_selected = false;
+bool valid_servo_pos_selected = false;
 
 // hold keypad input
-char keypad_message[1600];
-int message_length = 0;
+// char keypad_message[1600];
+String keypad_message = "";
+// int message_length = 0;
 
 void setup(){
   Serial.begin(9600);
-  myservo.attach(9);
+  lower_servo.attach(53);
+  upper_servo.attach(49);
 
+  // be polite
+  WelcomeMessage();
+
+  // ServoPositionPrompt();
 }
+
 void loop(){
-  // myservo.write(0);// move servos to center position -> 90°
-  // delay(1000);
 
-  // myservo.write(30);
-  // delay(1000);
-  //
-  // myservo.write(60);
-  // delay(1000);
-  //
-  // myservo.write(90);
-  // delay(1000);
-  //
-  // myservo.write(120);
-  // delay(1000);
-  //
-  // myservo.write(150);
-  // delay(1000);
+  valid_servo_selected = false;
+  valid_servo_pos_selected = false;
+  Servo focus_servo;
+  int new_position;
 
-  // myservo.write(180);
-  // delay(1000);
-
-  char keypad_input = customKeypad.getKey();
-
-  if (keypad_input){
-    KeypadLog(keypad_input);
-    }
-
+  focus_servo = SelectServo();
+  new_position = SelectServoPosition();
+  focus_servo.write(keypad_integer);
 
 }
 
-void KeypadLog(char _keypad_input) {
-  if (_keypad_input == '#') {
-    // display contents of keypad_message
-    // // prefix printed log
-    // Serial.println("");
-    // Serial.print("you typed: ");
-    //
-    // // loop through the relevant portion of keypad_message
-    // for (int i; i < message_length; i++) {
-    //   Serial.print(keypad_message[i]);
-    // }
-    //
-    // // padding
-    // Serial.println("");
-    // Serial.println("");
-    KeypadLogDisplay();
+void KeypadLogAppendDigit(char _append_me) {
+  if (isDigit(_append_me)) {
+    // convert the incoming byte to a char and add it to the string:
+    keypad_message += (char)_append_me;
+  }
+}
 
-    // reset the message length
-    KeypadLogReset();
+void PromptResponseAppend(char append_to_prompt) {
+  // append input to current line
+  if (append_to_prompt != '#') {
+    Serial.print(append_to_prompt);
+  }
+}
 
+bool ValidServoPosition(int potential_position) {
+  // a valid servo position is between 0 and 180
+  if (potential_position <= 180 && potential_position >= 0) {
+    return true;
   } else {
-    KeypadLogAppend(_keypad_input);
-
-    // print this keyboard input
-    Serial.print(_keypad_input);
+    return false;
   }
 }
 
-void KeypadLogReset() {
-  // flush keypad_messages
-  for (int i = 0; i < 1600; i++) {
-    keypad_message[i] = NULL;
+int SelectServoPosition() {
+  Serial.println("-- Select a Position ----------");
+  Serial.println("-- min: 0");
+  Serial.println("-- max: 180");
+  Serial.println("");
+  Serial.print("-- Your Selection: ");
+  valid_servo_pos_selected = false;
+
+  while (valid_servo_pos_selected == false) {
+    char keypad_number = customKeypad.getKey();
+    if (keypad_number) {
+      if (keypad_number == '#') {
+
+        keypad_integer = keypad_message.toInt();
+
+        if (ValidServoPosition(keypad_integer)) {
+          Serial.println(keypad_integer);
+          Serial.println("");
+          keypad_message = "";
+          valid_servo_pos_selected = true;
+        } else {
+          // invalid Selection
+          Serial.print("INVALID (");
+          Serial.print(keypad_integer);
+          Serial.println(")");
+          Serial.print("-- Your Selection: ");
+          keypad_message = "";
+        };
+      } else {
+        KeypadLogAppendDigit(keypad_number);
+      }
+    }
   }
-  // reset the position control varaible
-  message_length = 0;
 }
 
-void KeypadLogAppend(char _append_me) {
-  // slot input and increment position control variable
-  keypad_message[message_length] = _append_me;
-  message_length++;
+Servo SelectServo() {
+  // promput user to enter new servo position
+  Serial.println("-- Select a Servo -------------");
+  Serial.println("-- A: lower_servo");
+  Serial.println("-- B: upper_servo");
+  Serial.println("");
+  Serial.print("-- Your Selection: ");
+  char keypad_letter;
+  valid_servo_selected = false;
+
+  while (valid_servo_selected == false) {
+    keypad_letter = customKeypad.getKey();
+    if (keypad_letter) {
+      if (keypad_letter == 'A' || keypad_letter == 'B') {
+        // valid servo selected
+        Serial.println(keypad_letter);
+        Serial.println("");
+
+        valid_servo_selected = true;
+
+        if (keypad_letter == 'A') {
+          return lower_servo;
+        } else if (keypad_letter == 'B') {
+          return upper_servo;
+        }
+
+      } else {
+        // invalid Selection
+        Serial.println("INVALID");
+        Serial.print("-- Your Selection: ");
+      }
+    }
+  }
 }
 
-void KeypadLogDisplay() {
-  // prefix printed log
+void ServoPositionPrompt() {
+  // promput user to enter new servo position
   Serial.println("");
-  Serial.print("you typed: ");
+  Serial.println("");
+  Serial.print("Enter New Servo Position: ");
+}
 
-  // loop through the relevant portion of keypad_message
-  for (int i; i < message_length; i++) {
-    Serial.print(keypad_message[i]);
-  }
+void WelcomeMessage() {
+  Serial.println("-------------------------------");
+  Serial.println("----------- WELCOME -----------");
+  Serial.println("-------------------------------");
+  Serial.println("");
+  Serial.println("");
 
-  // padding
-  Serial.println("");
-  Serial.println("");
 }
